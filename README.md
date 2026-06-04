@@ -22,16 +22,18 @@
     *   Tự động kiểm tra số lượng tồn kho.
     *   Kiểm tra giới hạn mượn (mỗi sinh viên không quá 5 cuốn cùng lúc).
     *   Sử dụng **Database Transaction** để đảm bảo tính toàn vẹn dữ liệu.
-*   **Nghiệp vụ Trả sách**: 
+*   **Nghiệp vụ Trả sách Nâng cao**: 
     *   Cập nhật trạng thái phiếu mượn.
     *   Cộng lại số lượng tồn kho của sách.
+    *   **Tự động tính tiền phạt**: 5.000đ cho mỗi ngày vượt quá 14 ngày mượn.
     *   Sử dụng **Database Transaction**.
-*   **Lịch sử Mượn trả**: Xem danh sách các phiếu mượn với thông tin chi tiết, trạng thái trực quan (Đã trả, Quá hạn, Chưa trả) và khả năng thực hiện trả sách.
+*   **Lịch sử Mượn trả**: Xem danh sách các phiếu mượn với thông tin chi tiết, trạng thái trực quan (Đã trả, Quá hạn, Chưa trả) và khả năng thực hiện trả sách, hiển thị tiền phạt (nếu có).
+*   **Dashboard Thống kê (Điểm cộng)**: Hiển thị Top 5 cuốn sách được mượn nhiều nhất dưới dạng bảng.
 
 ## Công nghệ sử dụng
 
 *   **Back-end**: Node.js (Express.js), MySQL (mysql2/promise)
-*   **Front-end**: React.js (Vite), HTML, CSS thuần
+*   **Front-end**: React.js (Vite), HTML, CSS thuần, Chart.js (đã cài đặt cho khả năng mở rộng biểu đồ)
 *   **Database**: MySQL
 
 ## Cấu trúc thư mục
@@ -40,12 +42,13 @@
 . (root project folder)
 ├── backend/
 │   ├── app.js             # File chính khởi chạy Express app
-│   ├── db.js              # Cấu hình kết nối MySQL pool
+│   ├── db.js              # Cấu hình kết nối MySQL pool (hỗ trợ UTF8MB4)
 │   ├── package.json       # Dependencies và scripts cho backend
 │   └── routes/            # Chứa các định nghĩa API routes
 │       ├── sach.js        # API cho quản lý sách
 │       ├── sinhvien.js    # API cho quản lý sinh viên
-│       └── phieumuon.js   # API cho nghiệp vụ mượn/trả sách
+│       ├── phieumuon.js   # API cho nghiệp vụ mượn/trả sách (có tính phạt)
+│       └── thongke.js     # API thống kê (Top sách)
 ├── database/
 │   ├── schema.sql         # Định nghĩa cấu trúc database (CREATE TABLE)
 │   └── sample_data.sql    # Dữ liệu mẫu cho database
@@ -60,7 +63,8 @@
         ├── components/    # Các components của ứng dụng
         │   ├── DanhSachSach.jsx     # Hiển thị danh sách sách và thêm sách inline
         │   ├── TaoPhieuMuon.jsx     # Form tạo phiếu mượn
-        │   └── LichSuMuonTra.jsx    # Hiển thị lịch sử mượn trả
+        │   ├── LichSuMuonTra.jsx    # Hiển thị lịch sử mượn trả (hiển thị phạt)
+        │   └── Dashboard.jsx        # Màn hình thống kê (Top sách)
         └── services/
             └── api.js     # Các hàm gọi API tới backend
 ```
@@ -141,6 +145,9 @@ Các API được cung cấp bởi Back-end server (chạy tại `http://localho
 *   `POST /api/sinhvien`: Thêm sinh viên mới. Body: `{ mssv, ho_ten, lop, email, so_dien_thoai }`
 
 ### Phiếu mượn (`/api/phieu-muon`)
-*   `GET /api/phieu-muon`: Lấy lịch sử phiếu mượn chi tiết.
+*   `GET /api/phieu-muon`: Lấy lịch sử phiếu mượn chi tiết (bao gồm thông tin phạt).
 *   `POST /api/phieu-muon`: Tạo phiếu mượn mới. Body: `{ ma_sv, danh_sach_sach: [ma_sach1, ma_sach2, ...] }`
-*   `PUT /api/phieu-muon/:id/tra`: Trả toàn bộ sách trong một phiếu mượn. (Không cần body)
+*   `PUT /api/phieu-muon/:id/tra`: Trả toàn bộ sách trong một phiếu mượn (có tính phạt).
+
+### Thống kê (`/api/thongke`)
+*   `GET /api/thongke/top-sach`: Lấy Top 5 sách được mượn nhiều nhất.
